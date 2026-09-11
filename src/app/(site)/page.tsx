@@ -20,6 +20,8 @@ import { getSettings } from "@/lib/settings";
 import { getCategories, getCoursesWithCounts, getPlatformStats } from "@/lib/courses";
 import { toBn } from "@/lib/bangla";
 import CourseExplorer from "@/components/course-explorer";
+import { HeroIllustration } from "@/components/hero-illustration";
+import { SmartImage } from "@/components/smart-image";
 
 export const dynamic = "force-dynamic";
 
@@ -114,13 +116,9 @@ export default async function LandingPage({
           {/* Hero visual */}
           <div className="relative animate-rise lg:justify-self-end" style={{ animationDelay: "120ms" }}>
             <div className="relative overflow-hidden rounded-[2rem] border-8 border-white bg-ink-100 shadow-2xl shadow-brand-900/20">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/hero.png"
-                alt="অনলাইনে পড়াশোনা করছে শিক্ষার্থী"
-                className="aspect-[4/3.4] w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-950/30 via-transparent to-transparent" />
+              {/* ইনলাইন SVG ইলাস্ট্রেশন — কোনো ইমেজ ফাইল লাগে না, সব হোস্টে হুবহু দেখায় */}
+              <HeroIllustration className="h-auto w-full" />
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-950/10 via-transparent to-transparent" />
             </div>
 
             <div className="absolute -left-6 top-8 animate-float rounded-2xl border border-ink-100 bg-white/95 p-3.5 pr-5 shadow-xl shadow-ink-900/10 backdrop-blur">
@@ -312,10 +310,10 @@ export default async function LandingPage({
 
           <div className="relative">
             <div className="overflow-hidden rounded-[2rem] border border-ink-100 shadow-2xl shadow-brand-900/15">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/feature.png"
+              <SmartImage
+                candidates={["/images/feature.png"]}
                 alt="অনলাইন ক্লাস করছে শিক্ষার্থী"
+                fallbackLabel="অনলাইন ক্লাস"
                 className="aspect-[4/4.2] w-full object-cover"
               />
             </div>

@@ -97,9 +97,14 @@ function BulkForm({
     try {
       const res = await fetch(`/api/video-meta?url=${encodeURIComponent(trimmed)}`);
       if (!res.ok) throw new Error("fetch failed");
-      const data = (await res.json()) as { title?: string; duration?: string };
+      const data = (await res.json()) as {
+        provider?: string;
+        title?: string;
+        duration?: string;
+      };
 
       const auto = lastAuto.current[i] ?? {};
+      const isDrive = data.provider === "drive";
       setRows((prev) =>
         prev.map((r, idx) => {
           if (idx !== i) return r;
@@ -107,7 +112,16 @@ function BulkForm({
           if (data.title && (r.title === "" || r.title === auto.title)) {
             next.title = data.title;
           }
-          if (data.duration && (r.duration === "" || r.duration === auto.duration)) {
+          if (isDrive) {
+            // ড্রাইভ লিংকে সময় পাওয়া যায় না — ঘর খালি রাখি যাতে ম্যানুয়ালি লেখা যায়
+            // (ম্যানুয়ালি টাইপ করা মান কখনো মুছবে না)
+            if (r.duration === "" || r.duration === auto.duration) {
+              next.duration = "";
+            }
+          } else if (
+            data.duration &&
+            (r.duration === "" || r.duration === auto.duration)
+          ) {
             next.duration = data.duration;
           }
           return next;
@@ -115,7 +129,7 @@ function BulkForm({
       );
       lastAuto.current[i] = {
         title: data.title || auto.title,
-        duration: data.duration || auto.duration,
+        duration: isDrive ? "" : (data.duration || auto.duration),
       };
       setMeta((m) => ({ ...m, [i]: { loading: false, status: "ok" } }));
     } catch {
@@ -179,6 +193,11 @@ function BulkForm({
                     placeholder="২৫ মিনিট"
                     className={inputCls}
                   />
+                  {isDriveUrl(row.url) && (
+                    <p className="mt-1 text-[10px] font-semibold leading-tight text-ink-400">
+                      (ড্রাইভ লিংকের সময় নিজে টাইপ করুন)
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={labelCls}>ক্রম</label>

@@ -82,6 +82,17 @@ async function fetchYouTubeMeta(videoId: string) {
   return { provider: "youtube", title, duration };
 }
 
+/**
+ * ড্রাইভ ফাইলনামের শেষে থাকা সাধারণ ভিডিও/ফাইল এক্সটেনশন বাদ দেয়।
+ * যেমন "Course Outline Part 1.mp4" → "Course Outline Part 1"
+ */
+const FILE_EXTENSION_RE =
+  /\.(mp4|m4v|ts|mkv|avi|mov|webm|flv|wmv|vob|mpg|mpeg|3gp|mp3|wav|m4a|aac|pdf|docx?|xlsx?|pptx?|csv|zip|rar|7z|txt)\s*$/i;
+
+function cleanFileName(name: string): string {
+  return name.replace(FILE_EXTENSION_RE, "").trim();
+}
+
 async function fetchDriveMeta(fileId: string) {
   let title = "";
 
@@ -93,20 +104,38 @@ async function fetchDriveMeta(fileId: string) {
     });
     if (res.ok) {
       const html = await res.text();
-      const match = html.match(/<title>([^<]+)<\/title>/i);
-      if (match) {
-        title = decodeEntities(match[1])
-          .replace(/\s*-\s*Google Drive\s*$/i, "")
-          .trim();
-        // প্রাইভেট/অ্যাক্সেস-নেই এমন ফাইলে যে বার্তা আসে, সেটা শিরোনাম নয়
-        if (/unable to open|sign in|request access/i.test(title)) title = "";
+
+      // ১) প্রধান উৎস: og:title (পাবলিক ফাইলে সাধারণত পরিষ্কার ফাইলনাম থাকে)
+      const og = html.match(
+        /<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i
+      );
+      if (og) title = decodeEntities(og[1]);
+
+      // ২) ফলব্যাক: <title> ট্যাগ ("FILENAME - Google Drive")
+      if (!title) {
+        const tag = html.match(/<title>([^<]+)<\/title>/i);
+        if (tag) {
+          title = decodeEntities(tag[1])
+            .replace(/\s*-\s*Google Drive\s*$/i, "")
+            .trim();
+        }
       }
+
+      // প্রাইভেট/অ্যাক্সেস-নেই এমন ফাইলের বার্তা শিরোনাম নয়
+      if (
+        /unable to open|sign[\s-]?in|request access|access denied|not found/i.test(title)
+      )
+        title = "";
+
+      // এক্সটেনশন বাদ দিয়ে পরিষ্কার নাম রাখি
+      title = cleanFileName(title);
     }
   } catch {
     // চুপচাপ ফলব্যাক
   }
 
-  // Drive থেকে ভিডিওর সময় নির্ধারণ করা যায় না — ফিল্ড ম্যানুয়ালি এডিটযোগ্য থাকে
+  // Drive থেকে ভিডিওর সময় নির্ভরযোগ্যভাবে পাওয়া যায় না —
+  // duration খালি ফেরত যায়, অ্যাডমিন ম্যানুয়ালি লিখবেন
   return { provider: "drive", title, duration: "" };
 }
 

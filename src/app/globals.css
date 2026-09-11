@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-hind), "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+
+  --color-brand-50: #fdf1f4;
+  --color-brand-100: #fbe3e9;
+  --color-brand-200: #f7c3cf;
+  --color-brand-300: #f09aac;
+  --color-brand-400: #e75d7e;
+  --color-brand-500: #e01a3c;
+  --color-brand-600: #c8112f;
+  --color-brand-700: #a70e28;
+  --color-brand-800: #8a1027;
+  --color-brand-900: #6f1026;
+  --color-brand-950: #3e0713;
+
+  --color-ink-50: #f4f6fb;
+  --color-ink-100: #e9edf6;
+  --color-ink-200: #d4dcee;
+  --color-ink-300: #aab8d8;
+  --color-ink-400: #7a8fbe;
+  --color-ink-500: #5870a6;
+  --color-ink-600: #44598a;
+  --color-ink-700: #384970;
+  --color-ink-800: #1e2a4a;
+  --color-ink-900: #131c36;
+  --color-ink-950: #0a0f1f;
+
+  --color-gold-300: #ffd98a;
+  --color-gold-400: #ffc95c;
+  --color-gold-500: #ffb52e;
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-float-slow: float 11s ease-in-out infinite;
+  --animate-rise: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-14px);
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #fbfbfd;
+}
+
+::selection {
+  background: #e01a3c;
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f4;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c7c9d4;
+  border-radius: 999px;
+  border: 2px solid #f1f1f4;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e01a3c;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hero-grid-bg {
+  background-image:
+    linear-gradient(to right, rgb(224 26 60 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(224 26 60 / 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 45%, transparent 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

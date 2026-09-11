@@ -320,9 +320,9 @@ export default async function LandingPage() {
           <div className="relative">
             <div className="overflow-hidden rounded-[2rem] border border-ink-100 shadow-2xl shadow-brand-900/15">
               <SmartImage
-                candidates={["/images/feature.png"]}
+                candidates={["https://drive.google.com/file/d/1s4n5dqD2JLJlt3ylUSEscEIDZDJpXGzE/view?usp=sharing"]}
                 alt="অনলাইন ক্লাস করছে শিক্ষার্থী"
-                fallbackLabel="অনলাইন ক্লাস"
+                fallbackLabel=""
                 className="aspect-[4/4.2] w-full object-cover"
               />
             </div>

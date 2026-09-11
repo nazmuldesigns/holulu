@@ -112,17 +112,19 @@ function BulkForm({
           if (data.title && (r.title === "" || r.title === auto.title)) {
             next.title = data.title;
           }
-          if (isDrive) {
-            // ড্রাইভ লিংকে সময় পাওয়া যায় না — ঘর খালি রাখি যাতে ম্যানুয়ালি লেখা যায়
-            // (ম্যানুয়ালি টাইপ করা মান কখনো মুছবে না)
-            if (r.duration === "" || r.duration === auto.duration) {
-              next.duration = "";
-            }
-          } else if (
+          if (
             data.duration &&
             (r.duration === "" || r.duration === auto.duration)
           ) {
+            // YouTube হোক বা Drive — সময় পাওয়া গেলে বসিয়ে দিই
             next.duration = data.duration;
+          } else if (
+            isDrive &&
+            (r.duration === "" || r.duration === auto.duration)
+          ) {
+            // ড্রাইভে সময় না পেলে পুরনো (অটো-ফিল হওয়া) ভুল মানটা সরিয়ে রাখি;
+            // ম্যানুয়ালি টাইপ করা মান কখনো মুছবে না
+            next.duration = "";
           }
           return next;
         })
@@ -193,9 +195,9 @@ function BulkForm({
                     placeholder="২৫ মিনিট"
                     className={inputCls}
                   />
-                  {isDriveUrl(row.url) && (
+                  {isDriveUrl(row.url) && row.duration.trim() === "" && (
                     <p className="mt-1 text-[10px] font-semibold leading-tight text-ink-400">
-                      (ড্রাইভ লিংকের সময় নিজে টাইপ করুন)
+                      (সময় স্বয়ংক্রিয়ভাবে না এলে নিজে টাইপ করুন)
                     </p>
                   )}
                 </div>

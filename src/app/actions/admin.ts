@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import { claimPendingGrants, normalizePhone } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import { toBn } from "@/lib/bangla";
 import { setSetting, SETTING_KEYS } from "@/lib/settings";
 
 export type AdminFormState = { error?: string; success?: string } | null;
@@ -143,6 +144,119 @@ export async function deleteClassAction(id: string, courseId: string): Promise<v
   revalidatePath(`/admin/courses/${courseId}`);
 }
 
+/**
+ * একসাথে সর্বোচ্চ ৫টি ক্লাস যুক্ত করা যায়।
+ * ফর্মে title0..title4, url0..url4 ইত্যাদি ইনডেক্সড ফিল্ড আসে।
+ * খালি সারি স্কিপ হয়; আংশিক ভরা সারি হলে এরর।
+ */
+export async function addClassesBulkAction(
+  _prev: AdminFormState,
+  formData: FormData
+): Promise<AdminFormState> {
+  await requireAdmin();
+
+  const courseId = text(formData, "courseId");
+  if (!courseId) return { error: "কোর্স আইডি পাওয়া যায়নি" };
+
+  const rows: Array<{
+    title: string;
+    driveUrl: string;
+    duration: string;
+    order: number;
+    isFree: boolean;
+  }> = [];
+
+  for (let i = 0; i < 5; i++) {
+    const title = text(formData, `title${i}`);
+    const driveUrl = text(formData, `url${i}`);
+    if (!title && !driveUrl) continue; // খালি সারি — স্কিপ
+    if (!title || !driveUrl) {
+      return { error: `${toBn(i + 1)} নম্বর সারিতে ক্লাসের নাম ও ভিডিও লিংক দুটোই দিন` };
+    }
+    const orderRaw = Number(text(formData, `order${i}`));
+    rows.push({
+      title,
+      driveUrl,
+      duration: text(formData, `duration${i}`),
+      order: Number.isFinite(orderRaw) && orderRaw > 0 ? Math.floor(orderRaw) : 0,
+      isFree: formData.get(`free${i}`) === "on",
+    });
+  }
+
+  if (rows.length === 0) {
+    return { error: "অন্তত একটি ক্লাসের নাম ও ভিডিও লিংক দিন" };
+  }
+
+  const [maxRow] = await db
+    .select({ value: max(classes.orderIndex) })
+    .from(classes)
+    .where(eq(classes.courseId, courseId));
+  let auto = maxRow?.value ?? 0;
+
+  await db.insert(classes).values(
+    rows.map((r) => ({
+      courseId,
+      title: r.title,
+      driveUrl: r.driveUrl,
+      duration: r.duration,
+      type: "video",
+      isFree: r.isFree,
+      // ক্রম খালি থাকলে সর্বশেষ ক্রমের পরে অটো-অ্যাসাইন হয়
+      orderIndex: r.order > 0 ? r.order : ++auto,
+    }))
+  );
+
+  revalidatePath(`/courses/${courseId}`);
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath("/");
+  return { success: `${toBn(rows.length)}টি ক্লাস একসাথে যুক্ত হয়েছে` };
+}
+
+/** সেভ করা ক্লাসের তথ্য (নাম, লিংক, সময়, ক্রম, ফ্রি প্রিভিউ) আপডেট */
+export async function updateClassAction(
+  _prev: AdminFormState,
+  formData: FormData
+): Promise<AdminFormState> {
+  await requireAdmin();
+
+  const id = text(formData, "id");
+  const courseId = text(formData, "courseId");
+  const title = text(formData, "title");
+  const driveUrl = text(formData, "driveUrl");
+  if (!id || !courseId) return { error: "ক্লাস পাওয়া যায়নি" };
+  if (!title) return { error: "ক্লাসের নাম লিখুন" };
+  if (!driveUrl) return { error: "ভিডিও লিংক দিন" };
+
+  const [existing] = await db
+    .select()
+    .from(classes)
+    .where(eq(classes.id, id))
+    .limit(1);
+  if (!existing) return { error: "ক্লাসটি আর নেই (মুছে ফেলা হয়েছে)" };
+
+  const orderRaw = Number(text(formData, "orderIndex"));
+
+  await db
+    .update(classes)
+    .set({
+      title,
+      driveUrl,
+      duration: text(formData, "duration"),
+      isFree: formData.get("isFree") === "on",
+      // ক্রম খালি/শূন্য দিলে আগের ক্রমই থাকবে
+      orderIndex:
+        Number.isFinite(orderRaw) && orderRaw > 0
+          ? Math.floor(orderRaw)
+          : existing.orderIndex,
+    })
+    .where(eq(classes.id, id));
+
+  revalidatePath(`/courses/${courseId}`);
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath("/");
+  return { success: "ক্লাসের তথ্য আপডেট হয়েছে" };
+}
+
 /* -------------------------------- bonus videos -------------------------------- */
 
 export async function addBonusVideoAction(
@@ -185,6 +299,110 @@ export async function deleteBonusVideoAction(
   await db.delete(bonusVideos).where(eq(bonusVideos.id, id));
   revalidatePath(`/courses/${courseId}`);
   revalidatePath(`/admin/courses/${courseId}`);
+}
+
+/** একসাথে সর্বোচ্চ ৫টি বোনাস ভিডিও যুক্ত করা */
+export async function addBonusVideosBulkAction(
+  _prev: AdminFormState,
+  formData: FormData
+): Promise<AdminFormState> {
+  await requireAdmin();
+
+  const courseId = text(formData, "courseId");
+  if (!courseId) return { error: "কোর্স আইডি পাওয়া যায়নি" };
+
+  const rows: Array<{
+    title: string;
+    videoUrl: string;
+    duration: string;
+    order: number;
+    isFree: boolean;
+  }> = [];
+
+  for (let i = 0; i < 5; i++) {
+    const title = text(formData, `title${i}`);
+    const videoUrl = text(formData, `url${i}`);
+    if (!title && !videoUrl) continue;
+    if (!title || !videoUrl) {
+      return { error: `${toBn(i + 1)} নম্বর সারিতে নাম ও ভিডিও লিংক দুটোই দিন` };
+    }
+    const orderRaw = Number(text(formData, `order${i}`));
+    rows.push({
+      title,
+      videoUrl,
+      duration: text(formData, `duration${i}`),
+      order: Number.isFinite(orderRaw) && orderRaw > 0 ? Math.floor(orderRaw) : 0,
+      isFree: formData.get(`free${i}`) === "on",
+    });
+  }
+
+  if (rows.length === 0) {
+    return { error: "অন্তত একটি বোনাস ভিডিওর নাম ও লিংক দিন" };
+  }
+
+  const [maxRow] = await db
+    .select({ value: max(bonusVideos.orderIndex) })
+    .from(bonusVideos)
+    .where(eq(bonusVideos.courseId, courseId));
+  let auto = maxRow?.value ?? 0;
+
+  await db.insert(bonusVideos).values(
+    rows.map((r) => ({
+      courseId,
+      title: r.title,
+      videoUrl: r.videoUrl,
+      duration: r.duration,
+      isFree: r.isFree,
+      orderIndex: r.order > 0 ? r.order : ++auto,
+    }))
+  );
+
+  revalidatePath(`/courses/${courseId}`);
+  revalidatePath(`/admin/courses/${courseId}`);
+  return { success: `${toBn(rows.length)}টি বোনাস ভিডিও যুক্ত হয়েছে` };
+}
+
+/** সেভ করা বোনাস ভিডিওর তথ্য আপডেট */
+export async function updateBonusVideoAction(
+  _prev: AdminFormState,
+  formData: FormData
+): Promise<AdminFormState> {
+  await requireAdmin();
+
+  const id = text(formData, "id");
+  const courseId = text(formData, "courseId");
+  const title = text(formData, "title");
+  const videoUrl = text(formData, "videoUrl");
+  if (!id || !courseId) return { error: "বোনাস ভিডিও পাওয়া যায়নি" };
+  if (!title) return { error: "ভিডিওর নাম লিখুন" };
+  if (!videoUrl) return { error: "ভিডিও লিংক দিন" };
+
+  const [existing] = await db
+    .select()
+    .from(bonusVideos)
+    .where(eq(bonusVideos.id, id))
+    .limit(1);
+  if (!existing) return { error: "ভিডিওটি আর নেই (মুছে ফেলা হয়েছে)" };
+
+  const orderRaw = Number(text(formData, "orderIndex"));
+
+  await db
+    .update(bonusVideos)
+    .set({
+      title,
+      videoUrl,
+      duration: text(formData, "duration"),
+      isFree: formData.get("isFree") === "on",
+      orderIndex:
+        Number.isFinite(orderRaw) && orderRaw > 0
+          ? Math.floor(orderRaw)
+          : existing.orderIndex,
+    })
+    .where(eq(bonusVideos.id, id));
+
+  revalidatePath(`/courses/${courseId}`);
+  revalidatePath(`/admin/courses/${courseId}`);
+  return { success: "বোনাস ভিডিওর তথ্য আপডেট হয়েছে" };
 }
 
 /* ---------------------------------- materials ---------------------------------- */

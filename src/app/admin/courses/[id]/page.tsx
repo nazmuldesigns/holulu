@@ -17,6 +17,8 @@ import { db } from "@/db";
 import { bonusVideos, classes, courses, enrollments, materials, users } from "@/db/schema";
 import {
   addBonusVideoAction,
+  addBonusVideosBulkAction,
+  addClassesBulkAction,
   addClassAction,
   addMaterialAction,
   deleteBonusVideoAction,
@@ -25,7 +27,10 @@ import {
   deleteMaterialAction,
   grantEnrollmentByEmailAction,
   removeEnrollmentAction,
+  updateBonusVideoAction,
+  updateClassAction,
   updateCourseAction,
+  requireAdmin,
 } from "@/app/actions/admin";
 import {
   BonusAddForm,
@@ -34,6 +39,12 @@ import {
   GrantAccessForm,
   MaterialAddForm,
 } from "@/components/admin-forms";
+import {
+  BonusBulkForm,
+  BonusEditButton,
+  ClassBulkForm,
+  ClassEditButton,
+} from "@/components/admin-class-forms";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { bnDate, bnOrdinal, toBn } from "@/lib/bangla";
 import { driveViewUrl } from "@/lib/drive";
@@ -46,6 +57,7 @@ export default async function ManageCoursePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const [course] = await db.select().from(courses).where(eq(courses.id, id)).limit(1);
   if (!course) notFound();
@@ -150,20 +162,34 @@ export default async function ManageCoursePage({
                   )}
                 </p>
               </div>
-              <a
-                href={driveViewUrl(cls.driveUrl)}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="ড্রাইভে খুলুন"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-500 transition hover:border-brand-300 hover:text-brand-600"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
-              <ConfirmActionButton
-                action={deleteClassAction.bind(null, cls.id, course.id)}
-                message="ক্লাসটি মুছে ফেলবেন?"
-                iconOnly
-              />
+              <div className="flex shrink-0 items-center gap-2">
+                <ClassEditButton
+                  action={updateClassAction.bind(null)}
+                  courseId={course.id}
+                  item={{
+                    id: cls.id,
+                    title: cls.title,
+                    url: cls.driveUrl,
+                    duration: cls.duration,
+                    orderIndex: cls.orderIndex,
+                    isFree: cls.isFree,
+                  }}
+                />
+                <a
+                  href={driveViewUrl(cls.driveUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="ড্রাইভে খুলুন"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-500 transition hover:border-brand-300 hover:text-brand-600"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                <ConfirmActionButton
+                  action={deleteClassAction.bind(null, cls.id, course.id)}
+                  message="ক্লাসটি মুছে ফেলবেন?"
+                  iconOnly
+                />
+              </div>
             </li>
           ))}
           {classRows.length === 0 && (
@@ -176,9 +202,13 @@ export default async function ManageCoursePage({
         <div className="mt-6 rounded-2xl border border-brand-100 bg-brand-50/50 p-5">
           <h3 className="font-bold text-ink-900">নতুন ক্লাস যুক্ত করুন</h3>
           <p className="mb-4 mt-0.5 text-xs text-ink-400">
-            ক্লাসগুলো যুক্ত করার ক্রমানুসারে ১ম, ২য়, ৩য়... হিসেবে সাজবে
+            একবারে সর্বোচ্চ ৫টি ক্লাস যুক্ত করা যায় · ক্রম খালি রাখলে শেষের ক্লাসের পরে
+            অটো সাজবে (১ম, ২য়, ৩য়...)
           </p>
-          <ClassAddForm action={addClassAction.bind(null)} courseId={course.id} />
+          <ClassBulkForm
+            action={addClassesBulkAction.bind(null)}
+            courseId={course.id}
+          />
         </div>
       </section>
 
@@ -216,20 +246,34 @@ export default async function ManageCoursePage({
                   {bonus.isFree && <span className="font-bold text-emerald-600">ফ্রি প্রিভিউ</span>}
                 </p>
               </div>
-              <a
-                href={bonus.videoUrl}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="লিংক খুলুন"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-500 transition hover:border-brand-300 hover:text-brand-600"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
-              <ConfirmActionButton
-                action={deleteBonusVideoAction.bind(null, bonus.id, course.id)}
-                message="বোনাস ভিডিওটি মুছে ফেলবেন?"
-                iconOnly
-              />
+              <div className="flex shrink-0 items-center gap-2">
+                <BonusEditButton
+                  action={updateBonusVideoAction.bind(null)}
+                  courseId={course.id}
+                  item={{
+                    id: bonus.id,
+                    title: bonus.title,
+                    url: bonus.videoUrl,
+                    duration: bonus.duration,
+                    orderIndex: bonus.orderIndex,
+                    isFree: bonus.isFree,
+                  }}
+                />
+                <a
+                  href={bonus.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="লিংক খুলুন"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-500 transition hover:border-brand-300 hover:text-brand-600"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                <ConfirmActionButton
+                  action={deleteBonusVideoAction.bind(null, bonus.id, course.id)}
+                  message="বোনাস ভিডিওটি মুছে ফেলবেন?"
+                  iconOnly
+                />
+              </div>
             </li>
           ))}
           {bonusRows.length === 0 && (
@@ -241,8 +285,14 @@ export default async function ManageCoursePage({
 
         <div className="mt-6 rounded-2xl border border-gold-400/40 bg-gold-400/10 p-5">
           <h3 className="font-bold text-ink-900">নতুন বোনাস ভিডিও যুক্ত করুন</h3>
+          <p className="mb-4 mt-0.5 text-xs text-ink-400">
+            একবারে সর্বোচ্চ ৫টি বোনাস ভিডিও যুক্ত করা যায় (YouTube / Drive)
+          </p>
           <div className="mt-4">
-            <BonusAddForm action={addBonusVideoAction.bind(null)} courseId={course.id} />
+            <BonusBulkForm
+              action={addBonusVideosBulkAction.bind(null)}
+              courseId={course.id}
+            />
           </div>
         </div>
       </section>

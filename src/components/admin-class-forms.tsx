@@ -1,18 +1,21 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
   Clock3,
   Link2,
+  Loader2,
   PencilLine,
   Plus,
   Trash2,
+  Wand2,
   X,
 } from "lucide-react";
 import type { AdminFormState } from "@/app/actions/admin";
 import { SubmitButton } from "@/components/submit-button";
+import { isDriveUrl, isYouTubeUrl } from "@/lib/video";
 
 /* ------------------------------ shared styles ------------------------------ */
 
@@ -60,6 +63,12 @@ function BulkForm({
 }) {
   const [state, formAction] = useActionState<AdminFormState, FormData>(action, null);
   const [rows, setRows] = useState<Row[]>([{ ...emptyRow }]);
+  // প্রতি সারির অটো-মেটাডেটা অবস্থা: লোডিং + ফলাফল (সারিগুলো স্বাধীন)
+  const [meta, setMeta] = useState<
+    Record<number, { loading: boolean; status: "idle" | "ok" | "fail" }>
+  >({});
+  // কোন মানগুলো আমরা অটো-ফিল করেছি তার হিসাব — ম্যানুয়ালি লেখা মান কখনো মুছবে না
+  const lastAuto = useRef<Record<number, { title?: string; duration?: string }>>({});
 
   useEffect(() => {
     if (state?.success) setRows([{ ...emptyRow }]);
@@ -69,6 +78,55 @@ function BulkForm({
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   const canAdd = rows.length < 5;
+
+  /**
+   * URL ঘর থেকে ফোকাস সরলে (onBlur) লিংক থেকে ভিডিওর নাম ও সময় আনার চেষ্টা।
+   * - শুধু খালি ঘর বা আগে অটো-ফিল হওয়া ঘরে লেখে (ম্যানুয়াল লেখা সুরক্ষিত)
+   * - ব্যর্থ হলে কোনো ব্লকিং এরর নয় — ম্যানুয়াল এন্ট্রি চালু থাকে
+   */
+  const handleUrlBlur = async (i: number, url: string) => {
+    const trimmed = url.trim();
+
+    if (!trimmed || (!isYouTubeUrl(trimmed) && !isDriveUrl(trimmed))) {
+      setMeta((m) => ({ ...m, [i]: { loading: false, status: "idle" } }));
+      return;
+    }
+
+    setMeta((m) => ({ ...m, [i]: { loading: true, status: "idle" } }));
+
+    try {
+      const res = await fetch(`/api/video-meta?url=${encodeURIComponent(trimmed)}`);
+      if (!res.ok) throw new Error("fetch failed");
+      const data = (await res.json()) as { title?: string; duration?: string };
+
+      const auto = lastAuto.current[i] ?? {};
+      setRows((prev) =>
+        prev.map((r, idx) => {
+          if (idx !== i) return r;
+          const next = { ...r };
+          if (data.title && (r.title === "" || r.title === auto.title)) {
+            next.title = data.title;
+          }
+          if (data.duration && (r.duration === "" || r.duration === auto.duration)) {
+            next.duration = data.duration;
+          }
+          return next;
+        })
+      );
+      lastAuto.current[i] = {
+        title: data.title || auto.title,
+        duration: data.duration || auto.duration,
+      };
+      setMeta((m) => ({ ...m, [i]: { loading: false, status: "ok" } }));
+    } catch {
+      setMeta((m) => ({ ...m, [i]: { loading: false, status: "fail" } }));
+    }
+
+    // ইঙ্গিতটি কিছুক্ষণ পরে মিলিয়ে যাবে
+    window.setTimeout(() => {
+      setMeta((m) => (m[i] ? { ...m, [i]: { loading: false, status: "idle" } } : m));
+    }, 2800);
+  };
 
   return (
     <form action={formAction} className="space-y-4">
@@ -136,17 +194,41 @@ function BulkForm({
                 </div>
               </div>
               <div className="sm:col-span-2">
-                <label className={labelCls}>{urlLabel} *</label>
+                <label className={labelCls}>
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    {urlLabel} *
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-500">
+                      <Wand2 className="h-3 w-3" /> লিংক দিলে নাম-সময় স্বয়ংক্রিয়ভাবে আসবে
+                    </span>
+                  </span>
+                </label>
                 <div className="relative">
                   <Link2 className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-300" />
                   <input
                     name={`url${i}`}
                     value={row.url}
                     onChange={(e) => update(i, { url: e.target.value })}
+                    onBlur={(e) => handleUrlBlur(i, e.target.value)}
                     placeholder="https://drive.google.com/file/d/... অথবা YouTube লিংক"
-                    className={`${inputCls} pl-12`}
+                    className={`${inputCls} pl-12 pr-10`}
                   />
+                  {meta[i]?.loading && (
+                    <span className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5 text-[11px] font-semibold text-ink-400">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      মেটাডেটা লোড হচ্ছে...
+                    </span>
+                  )}
                 </div>
+                {meta[i]?.status === "ok" && (
+                  <p className="mt-1.5 text-[11px] font-semibold text-emerald-600">
+                    ✓ ভিডিওর তথ্য পূরণ হয়েছে — দরকার হলে বদলে নিতে পারেন
+                  </p>
+                )}
+                {meta[i]?.status === "fail" && (
+                  <p className="mt-1.5 text-[11px] font-semibold text-ink-400">
+                    স্বয়ংক্রিয় তথ্য আনা যায়নি — নাম ও সময় নিজে লিখে নিন
+                  </p>
+                )}
               </div>
               {showFreePreview && (
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-ink-700 sm:col-span-2">

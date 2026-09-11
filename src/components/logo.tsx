@@ -10,7 +10,7 @@ export async function Logo({ dark = false }: { dark?: boolean }) {
   const rest = parts.length > 1 ? parts.slice(1).join(" ") : name;
 
   return (
-    <Link href="/" className="group flex items-center gap-2.5">
+    <Link href="/" prefetch={true} className="group flex items-center gap-2.5">
       {settings.logo_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

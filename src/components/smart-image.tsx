@@ -12,11 +12,14 @@ export function SmartImage({
   alt,
   className = "",
   fallbackLabel,
+  eager = false,
 }: {
   candidates: string[];
   alt: string;
   className?: string;
   fallbackLabel?: string;
+  /** above-the-fold ইমেজের জন্য — eager লোড + উচ্চ fetch priority */
+  eager?: boolean;
 }) {
   const list = useMemo(() => candidates.filter(Boolean), [candidates]);
   const [index, setIndex] = useState(0);
@@ -40,7 +43,8 @@ export function SmartImage({
     <img
       src={list[index]}
       alt={alt}
-      loading="lazy"
+      loading={eager ? "eager" : "lazy"}
+      fetchPriority={eager ? "high" : "auto"}
       referrerPolicy="no-referrer"
       className={className}
       onError={() => {

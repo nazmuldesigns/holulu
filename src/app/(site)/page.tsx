@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -23,15 +24,13 @@ import CourseExplorer from "@/components/course-explorer";
 import { HeroIllustration } from "@/components/hero-illustration";
 import { SmartImage } from "@/components/smart-image";
 
-export const dynamic = "force-dynamic";
+// revalidate=60 সেট করা আছে — লেআউটের হেডারে সেশন-কুকি ব্যবহৃত হওয়ায় রুটটি
+// সার্ভার-রেন্ডার হয়, তবে অ্যাডমিন অ্যাকশনগুলো revalidatePath("/") দিয়ে ক্যাশ
+// নষ্ট করে এবং কোর্স তালিকা Suspense-বাউন্ডারিযুক্ত হওয়ায় পেজ দ্রুত স্ট্রিম হয়।
+export const revalidate = 60;
 
-export default async function LandingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string }>;
-}) {
-  const [{ category }, settings, courseList, categories, stats] = await Promise.all([
-    searchParams,
+export default async function LandingPage() {
+  const [settings, courseList, categories, stats] = await Promise.all([
     getSettings(),
     getCoursesWithCounts(true),
     getCategories(),
@@ -191,11 +190,21 @@ export default async function LandingPage({
           </div>
         </div>
 
-        <CourseExplorer
-          courses={courseList}
-          categories={categories}
-          initialCategory={category ?? "সব"}
-        />
+        {/* useSearchParams-এর জন্য Suspense বাউন্ডারি — পেজ স্ট্যাটিক থাকে */}
+        <Suspense
+          fallback={
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-80 animate-pulse rounded-2xl bg-ink-100/70"
+                />
+              ))}
+            </div>
+          }
+        >
+          <CourseExplorer courses={courseList} categories={categories} />
+        </Suspense>
       </section>
 
       {/* --------------------------- HOW IT WORKS -------------------------- */}
@@ -393,6 +402,7 @@ export default async function LandingPage({
           <div className="relative mt-8 flex flex-wrap items-center justify-center gap-3.5">
             <Link
               href="/register"
+              prefetch={true}
               className="rounded-full bg-white px-8 py-4 text-[16px] font-bold text-brand-600 shadow-xl shadow-ink-950/20 transition hover:-translate-y-0.5 hover:shadow-2xl"
             >
               ফ্রি অ্যাকাউন্ট খুলুন

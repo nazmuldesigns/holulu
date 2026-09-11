@@ -209,6 +209,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                   candidates={thumbnailCandidates(course.thumbnail, 800)}
                   alt={course.title}
                   fallbackLabel={course.title}
+                  eager
                   className="aspect-video w-full object-cover"
                 />
               </div>

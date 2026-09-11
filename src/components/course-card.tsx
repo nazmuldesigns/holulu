@@ -23,6 +23,7 @@ export function CourseCard({ course }: { course: CourseCardData }) {
   return (
     <Link
       href={`/courses/${course.id}`}
+      prefetch={true}
       className="group flex flex-col overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-sm shadow-ink-900/5 transition-all duration-300 hover:-translate-y-1.5 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-500/10"
     >
       <div className="relative aspect-[16/9] overflow-hidden bg-ink-100">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, SearchX } from "lucide-react";
 import { CourseCard, type CourseCardData } from "@/components/course-card";
 import { toBn } from "@/lib/bangla";
@@ -9,19 +10,26 @@ function normalize(text: string): string {
   return text.toLowerCase().replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)));
 }
 
+/**
+ * ক্যাটাগরি প্যারাম এখন ক্লায়েন্টে পড়া হয় — ফলে ল্যান্ডিং পেজটি
+ * সম্পূর্ণ স্ট্যাটিকভাবে প্রি-রেন্ডার/ISR করা যায় (দ্রুত লোড)।
+ */
 export default function CourseExplorer({
   courses,
   categories,
-  initialCategory = "সব",
 }: {
   courses: CourseCardData[];
   categories: string[];
-  initialCategory?: string;
 }) {
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState(
-    categories.includes(initialCategory) ? initialCategory : "সব"
-  );
+  const [category, setCategory] = useState("সব");
+
+  // URL-এ ?category= থাকলে সেটি প্রয়োগ করি (ফুটার/বাইরের ডিপ-লিংক)
+  useEffect(() => {
+    const c = searchParams.get("category");
+    if (c && categories.includes(c)) setCategory(c);
+  }, [searchParams, categories]);
 
   const filtered = useMemo(() => {
     const q = normalize(query.trim());

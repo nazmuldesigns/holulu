@@ -32,6 +32,7 @@ import { parseVideoSource } from "@/lib/video";
 import { EnrollButton } from "@/components/enroll-button";
 import { CompleteButton } from "@/components/complete-button";
 import { ProgressBar } from "@/components/progress-bar";
+import { BrandedPlayer } from "@/components/branded-player";
 
 export const dynamic = "force-dynamic";
 
@@ -131,7 +132,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
         <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.6fr_1fr] lg:px-8 lg:py-14">
           <div>
-            <nav className="flex items-center gap-1.5 text-sm text-white/50">
+            <nav className="flex flex-wrap items-center gap-y-1 gap-x-1.5 text-sm text-white/50">
               <Link href="/" className="transition hover:text-white">
                 হোম
               </Link>
@@ -190,7 +191,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
             </div>
 
             {enrolled && !isUpcoming && classRows.length > 0 && (
-              <div className="mt-6 max-w-sm rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur">
+              <div className="mt-6 w-full max-w-full rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur sm:max-w-sm">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-white/60">
                   <Sparkles className="h-3.5 w-3.5 text-gold-400" /> আপনার অগ্রগতি
                 </p>
@@ -249,7 +250,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
       </section>
 
       {/* ------------------------- PLAYER + SYLLABUS ------------------------ */}
-      <section id="player" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-8 sm:px-6 lg:py-12 lg:px-8">
+      <section id="player" className="mx-auto max-w-7xl scroll-mt-24 overflow-x-clip px-4 py-8 sm:px-6 lg:py-12 lg:px-8">
         {/* Mobile pricing card */}
         {!enrolled && !isUpcoming && (
           <div className="mb-6 rounded-3xl border border-ink-100 bg-white p-5 shadow-lg shadow-ink-900/5 lg:hidden">
@@ -274,18 +275,18 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
             {(activeClass || activeBonus) && activeUnlocked && videoSource?.embedUrl ? (
               <div>
                 <div className="relative overflow-hidden rounded-2xl border border-ink-100 bg-black shadow-2xl shadow-ink-900/20 sm:rounded-3xl">
-                  <iframe
-                    key={(activeBonus ?? activeClass)?.id}
-                    src={videoSource.embedUrl}
+                  {/* পোস্টার-ফার্স্ট ব্র্যান্ডেড প্লেয়ার — ক্লিক না করা পর্যন্ত
+                      কোনো YouTube/Google এলিমেন্ট লোড হয় না */}
+                  <BrandedPlayer
+                    playerKey={(activeBonus ?? activeClass)?.id}
+                    embedUrl={videoSource.embedUrl}
                     title={(activeBonus ?? activeClass)?.title ?? "ভিডিও প্লেয়ার"}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                    allowFullScreen
-                    className="aspect-video w-full"
+                    thumbnail={videoSource.thumbnail}
                   />
                 </div>
 
                 <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-                  <div>
+                  <div className="min-w-0">
                     <p className={`flex items-center gap-1.5 text-sm font-semibold ${activeBonus ? "text-gold-500" : "text-brand-600"}`}>
                       {activeBonus ? (
                         <>
@@ -295,7 +296,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                         <>{bnOrdinal(activeIndex + 1)} ক্লাস</>
                       )}
                     </p>
-                    <h2 className="mt-1 text-xl font-bold text-ink-900 sm:text-2xl">
+                    <h2 className="mt-1 break-words text-xl font-bold text-ink-900 sm:text-2xl">
                       {(activeBonus ?? activeClass)?.title}
                     </h2>
                     {(activeBonus ?? activeClass)?.duration && (
@@ -306,19 +307,19 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                   </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                <div className="mt-5 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-3">
                     {activeBonus ? (
                       <Link
                         href={`/courses/${id}#player`}
-                        className="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm font-semibold text-ink-700 transition hover:border-brand-300 hover:text-brand-600"
+                        className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm font-semibold text-ink-700 transition hover:border-brand-300 hover:text-brand-600 sm:flex-none"
                       >
                         <ArrowLeft className="h-4 w-4" /> মূল ক্লাসে ফিরুন
                       </Link>
                     ) : prevClass ? (
                       <Link
                         href={`/courses/${id}?class=${prevClass.id}#player`}
-                        className="flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm font-semibold text-ink-700 transition hover:border-brand-300 hover:text-brand-600"
+                        className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm font-semibold text-ink-700 transition hover:border-brand-300 hover:text-brand-600 sm:flex-none"
                       >
                         <ArrowLeft className="h-4 w-4" /> আগের ক্লাস
                       </Link>
@@ -327,7 +328,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                     {activeClass && nextClass && (
                       <Link
                         href={`/courses/${id}?class=${nextClass.id}#player`}
-                        className="flex items-center gap-2 rounded-xl bg-ink-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-600"
+                        className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-ink-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-brand-600 sm:flex-none"
                       >
                         পরের ক্লাস <ArrowRight className="h-4 w-4" />
                       </Link>
@@ -493,7 +494,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
       {/* ----------------------------- BONUS VIDEOS ----------------------------- */}
       {bonusRows.length > 0 && (
-        <section className="mx-auto max-w-7xl scroll-mt-24 px-4 pb-14 sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-7xl scroll-mt-24 overflow-x-clip px-4 pb-14 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-[2rem] border border-gold-400/30 bg-gradient-to-br from-ink-950 via-ink-900 to-ink-950 text-white shadow-xl">
             <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-6 sm:px-8">
               <h3 className="flex items-center gap-2.5 text-xl font-bold sm:text-2xl">
@@ -508,7 +509,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
               <p className="text-sm text-white/50">কোর্সের সাথে একদম ফ্রি অতিরিক্ত ক্লাস</p>
             </div>
 
-            <div className="no-scrollbar mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-7 sm:grid sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
+            <div className="no-scrollbar mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-5 pb-7 sm:grid sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
               {bonusRows.map((bonus) => {
                 const source = parseVideoSource(bonus.videoUrl);
                 const unlocked = canAccess(bonus.isFree);
@@ -584,7 +585,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
       )}
 
       {/* ---------------------------- MATERIALS ---------------------------- */}
-      <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl overflow-x-clip px-4 pb-24 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-[2rem] border border-ink-100 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-50 bg-gradient-to-r from-brand-50/80 to-transparent px-6 py-5 sm:px-7">
             <h3 className="flex items-center gap-2.5 text-xl font-bold text-ink-900">
@@ -615,7 +616,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                         {m.type} ফাইল · নম্বর {toBn(i + 1)}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
                       <a
                         href={driveViewUrl(m.driveUrl)}
                         target="_blank"
@@ -667,7 +668,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
       {/* --------------------- MOBILE STICKY ENROLL BAR --------------------- */}
       {!enrolled && !isUpcoming && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 p-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
-          <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <div className="mx-auto flex max-w-7xl items-center gap-3 [&>button]:px-4 [&>button]:py-3 [&>button]:text-sm [&>button]:whitespace-nowrap sm:[&>button]:px-6 sm:[&>button]:py-3.5 sm:[&>button]:text-[15px]">
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold text-ink-500">{course.title}</p>
               <p className="text-lg font-bold leading-tight text-brand-600">

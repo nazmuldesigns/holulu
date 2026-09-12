@@ -69,6 +69,30 @@ body {
   overflow-x: clip;
 }
 
+/* কোনো মিডিয়া উপাদান যেন কখনো ভিউপোর্ট তার চেয়ে চওড়া না হয় —
+   মোবাইলে ডান পাশ কাটার মূল কারণগুলোর সার্বজনীন প্রতিরোধ */
+img,
+video,
+iframe,
+svg,
+canvas,
+object,
+embed {
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+/* গ্রিড/ফ্লেক্স আইটেমের min-content গিয়ে পেজ ভাঙাটাও বন্ধ */
+main,
+section,
+article,
+aside {
+  min-width: 0;
+}
+
 ::selection {
   background: #e01a3c;
   color: #fff;

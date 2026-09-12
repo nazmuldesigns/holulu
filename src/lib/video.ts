@@ -50,10 +50,15 @@ export function isDriveUrl(url: string): boolean {
 }
 
 export function youtubeEmbedUrl(id: string): string {
+  // youtube-nocookie ডোমেন + মিনিমাল ব্র্যান্ডিং প্যারামের সর্বোচ্চ সংখ্যা —
+  // প্লেয়ারটি যতটা সম্ভব নেটিভ লুক দেয়।
   const params = new URLSearchParams({
     rel: "0", // শেষে অপ্রাসঙ্গিক ভিডিও সাজেশন বন্ধ
-    modestbranding: "1", // ইউটিউব লোগো মিনিমাইজ
-    iv_load_policy: "3", // অ্যানোটেশন বন্ধ
+    modestbranding: "1", // কন্ট্রোল বারে ইউটিউব লোগো লুকায়
+    iv_load_policy: "3", // ভিডিওর অ্যানোটেশন বন্ধ
+    showinfo: "0", // টাইটেল ইনফো বার সরায় (deprecated অথচ নিরাপদ)
+    cc_load_policy: "0", // ডিফল্ট সাবটাইটেল বন্ধ
+    controls: "1",
     fs: "1",
     playsinline: "1",
     color: "white",

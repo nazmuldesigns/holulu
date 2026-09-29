@@ -151,11 +151,21 @@ aside {
   mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 45%, transparent 100%);
 }
 
+.animate-float {
+  animation: float 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-float-slow {
+  animation: float 11s ease-in-out infinite;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
 }
+
